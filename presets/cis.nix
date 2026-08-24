@@ -174,6 +174,7 @@ in {
       };
 
       pam = {
+        # CIS 5.3.4 - ommitted as PAM uses yescrypt which is more secure than md5 and sha512 anyway.
         login-faildelay = 4000000; # CIS 5.3.2 - lockout for failed attempts
         su-wheel-only = true; # CIS 5.6 - restrict su to wheel group
       };
