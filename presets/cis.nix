@@ -18,11 +18,9 @@
   l,
   mkPresets,
   ...
-}:
-let
+}: let
   toWarnings = l.concatMap (a: l.optional (!a.assertion) a.message);
-in
-{
+in {
   # CIS Benchmark Compliance Preset
   #
   # Implements Center for Internet Security (CIS) benchmark requirements.
@@ -176,7 +174,6 @@ in
       };
 
       pam = {
-        shadow-hashing = 65536; # CIS 5.3.4 - SHA-512 password hashing
         login-faildelay = 4000000; # CIS 5.3.2 - lockout for failed attempts
         su-wheel-only = true; # CIS 5.6 - restrict su to wheel group
       };
@@ -201,24 +198,21 @@ in
         };
       };
     };
+
+    # CIS 3.4.1-3.4.4 - disable uncommon network protocols
+    kernel-modules = {
+      blacklist = {
+        dccp = true;
+        sctp = true;
+        rds = true;
+        tipc = true;
+      };
+      disable = {
+        dccp = true;
+        sctp = true;
+        rds = true;
+        tipc = true;
+      };
+    };
   };
-
-  # CIS 3.4.1-3.4.4 - disable uncommon network protocols
-  environment.etc."modprobe.d/cis-uncommon-protocols.conf".text = ''
-    # CIS 3.4.1 - disable DCCP
-    install dccp /bin/false
-    blacklist dccp
-
-    # CIS 3.4.2 - disable SCTP
-    install sctp /bin/false
-    blacklist sctp
-
-    # CIS 3.4.3 - disable RDS
-    install rds /bin/false
-    blacklist rds
-
-    # CIS 3.4.4 - disable TIPC
-    install tipc /bin/false
-    blacklist tipc
-  '';
 }
