@@ -21,8 +21,14 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "settings" "kernel" "only-signed-modules" ] ''
+      This option does nothing on the upstream NixOS kernel.
+    '')
+  ];
+
   options = {
-    only-signed-modules = l.mkBoolOption ''
+    only-signed-modules = l.mkDeprecatedOption ''
       Requires all kernel modules to be signed. This prevents out-of-tree
       kernel modules from working unless signed.
 
@@ -30,19 +36,16 @@
       This currently does nothing as the default NixOS kernel config does not
       enable Linux kernel lockdown as of 16/03/26.
 
-      It will remain implemented by default in the event that circumstances
-      change, since adding the corresponding boot parameter anyways is harmless.
-
       See:
       https://github.com/NixOS/nixpkgs/blob/baeac6edff1b03f0ecd063b8fe48e9742d0527e7/pkgs/os-specific/linux/kernel/common-config.nix#L830
       https://github.com/cynicsketch/nix-mineral/issues/125
 
       If `false`, {option}`nix-mineral.settings.kernel.lockdown` must also be false.
       :::
-    '' true;
+    '';
   };
 
-  config = l.mkIf cfg {
+  config = l.mkIf (cfg == true) {
     boot.kernelParams = [
       "module.sig_enforce=1"
     ];

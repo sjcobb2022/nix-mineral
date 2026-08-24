@@ -7,9 +7,12 @@ One of the main ideas is to be as modular as possible, so don't create modules t
 - [Rules](#rules)
 - [Libs](#libs)
 - [Creating a module](#creating-a-module)
+- [Deprecate a module](#deprecate-a-module)
 - [Creating a category](#creating-a-category)
 - [Hardening a filesystem](#hardening-a-filesystem)
 - [Creating a preset](#creating-a-preset)
+- [Disable or blacklist a kernel module](#disable-or-blacklist-a-kernel-module)
+- [Creating a kernel module combo](#creating-a-kernel-module-combo)
 - [Adding functions to the lib](#adding-functions-to-the-lib)
 - [Licensing and copyright](#licensing-and-copyright)
 
@@ -22,6 +25,7 @@ One of the main ideas is to be as modular as possible, so don't create modules t
 - Invert options that are intended to disable something, for example: don't use `disable-example-feature-y`, use `example-feature-y` and set the default to `false`.
 - Use the `l.mkBoolOption` function to create boolean options.
 - Do not attempt to add any feature which has been intentionally excluded under [OMITTED.md](OMITTED.md) or [ADDITIONAL-RESOURCES.md](ADDITIONAL-RESOURCES.md) without first creating an issue.
+- In general, do not add stateful features. All changes should be readily able to be rolled back with a rebuild.
 - Issues should be created for most feature changes before attempting a PR. Bug fixes, and minor documentation changes do not require issues, but it is still heavily encouraged.
 - Where applicable, update both [presets](https://github.com/cynicsketch/nix-mineral/tree/main/presets) and the [README](https://github.com/cynicsketch/nix-mineral/tree/main/README.md) to reflect any new options.
 - Use `l.mkOverride 900` over `l.mkForce` when forcefully overriding NixOS defaults is necessary, to make sure it actually applies.
@@ -101,10 +105,10 @@ l.fetchGhFile l.sources.example-file
 
 ---
 
-`l.importModule`: import wrapper to pass extra args to a module, and also pass the lib `l`.
+`l.importModule`: Import wrapper to pass extra args to a module, and also pass the lib `l`.
 
 Takes 2 arguments:
-path, extraArgs
+module, extraArgs
 
 Example:
 
@@ -112,6 +116,60 @@ Example:
 # Imports the module at ./example-module.nix, passing the lib `l` and an extra argument `customArg` with value "value"
 # The imported module is the same as using the nix import function.
 l.importModule ./example-module.nix { customArg = "value"; }
+
+# Imports a module with no extra arguments, just passing the lib `l`
+l.importModule ({...}: { }) { }
+```
+
+---
+
+`l.mkDeprecatedOption`: Creates a deprecated option, forcing the default value to be null. It is intended to be used with `l.mkDeprecatedOptionModule` to have a deprecation warning if the option is set to a non-null value [Read more](#deprecate-a-module).
+
+Takes 1 argument:
+attrs
+
+Example:
+
+```nix
+{
+  options = {
+    # Creates a deprecated option, the default value is converted to null,
+    # and a deprecation warning is added to the description of the option.
+    # `attrs` can be any attrset that can be passed to `mkOption`.
+    my-deprecated-option = l.mkDeprecatedOption {
+      description = "Example description";
+      default = true;
+      example = false;
+      type = l.types.bool;
+    };
+
+    # `attrs` can also be a string,
+    # this will create a boolean option with the description set to the string.
+    my-deprecated-option-2 = l.mkDeprecatedOption "Example description";
+  };
+}
+```
+
+---
+
+`l.mkDeprecatedOptionModule`: Returns a module that shows a deprecation warning if the option defined in the `optionPath` argument is not null. It is intended to be used with `l.mkDeprecatedOption` to create a deprecated option with the default value set to null [Read more](#deprecate-a-module).
+
+Takes 2 arguments:
+optionPath, message
+
+Example:
+
+```nix
+{
+  # This function is intended to be used inside the `imports` attribute of a module,
+  # the same way you would use `mkRemovedOptionModule` in nixpkgs.
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "example" "option" "path" ] ''
+      This is an additional message to be displayed when the deprecation warning is shown.
+      It can be used to explain why the option was deprecated, and what the user should do instead.
+    '')
+  ];
+}
 ```
 
 # Creating a module
@@ -172,6 +230,71 @@ First, I create a file `example-module.nix` inside the `system` folder with this
    `settings/kernel/cpu-mitigations.nix`: A module that uses an enum instead of a bool.
    `extras/misc/usbguard.nix`: A module with several options.
 
+# Deprecate a module
+
+1. Choose an existing module to deprecate:
+   This assumes you have read the [Creating a module](#creating-a-module) section and understand how to create a module.
+   Other steps assumes you are inside the module you want to deprecate.
+
+2. Create a `l.mkDeprecatedOptionModule` function:
+   Add an `imports` list with a `mkDeprecatedOptionModule` call.
+
+```nix
+{
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "category" "option-name" ] ''
+      Please use the new module `new-option-name` instead.
+    '')
+  ];
+}
+```
+
+3. Use `l.mkDeprecatedOption` in the `options` attribute:
+   Convert the option inside the module to a deprecated option, using the `l.mkDeprecatedOption` function.
+
+```nix
+{
+  options = {
+    # In this example, the option `option-name` was originally created with `l.mkBoolOption`,
+    # so we wrap it with `l.mkDeprecatedOption` to create a deprecated option,
+    # but if the option was created with `l.mkOption`, we can just replace it with `l.mkDeprecatedOption` and keep the same attributes.
+    option-name = l.mkDeprecatedOption (l.mkBoolOption "Example description" true);
+  };
+}
+```
+
+4. Change the `config` attribute condition:
+   Some changes may be needed in the condition of the `config` attribute, as now the option default value is `null`, so you may need to change the condition to check if the option is not null.
+
+Complete example of a deprecated module:
+
+```nix
+{
+  pkgs,
+  l,
+  cfg,
+  ...
+}:
+
+{
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "category" "option-name" ] ''
+      Please use the new module `new-option-name` instead.
+    '')
+  ];
+
+  options = {
+    option-name = l.mkDeprecatedOption (l.mkBoolOption "Example description" true);
+  };
+
+  # The condition originally was just `l.mkIf cfg`, but now `cfg` can be null,
+  # so we change it to `l.mkIf (cfg == true)`.
+  config = l.mkIf (cfg == true) {
+    environment.systemPackages = with pkgs; [ firefox ];
+  };
+}
+```
+
 # Creating a category
 
 1. Choose a module type:
@@ -213,15 +336,9 @@ let
       };
 in
 {
-  options = {
-    new-category = l.mkOption {
-      description = ''
-        This is a new category example.
-      '';
-      default = { };
-      type = l.mkCategorySubmodule categoryModules;
-    };
-  };
+  imports = l.mkCategoryImports categoryModules;
+
+  options.new-category = l.mkCategoryOptions categoryModules;
 
   config = l.mkCategoryConfig categoryModules;
 }
@@ -271,6 +388,70 @@ Examples are within the files.
 2. Add your preset to the `presets/default.nix` file:
    In the `presets` attrset at the top of the file, add your preset with the name as the key and the description as the value.
    Your preset name must match the filename you created in step 1. This will automatically import the preset file when the user includes the preset name in their configuration.
+
+# Disable or blacklist a kernel module
+
+Use `nix-mineral.kernel-modules.disable` or `nix-mineral.kernel-modules.blacklist`. Both are attrsets, simply add a kernel module name as a key and the value as a boolean, where `true` means the module will be disabled or blacklisted, and `false` means it will not be disabled or blacklisted. Example:
+
+```nix
+{
+  nix-mineral.kernel-modules = {
+    # Disable the kernel module "example-module"
+    disable.example-module = true;
+
+    # Blacklist the kernel module "example-module"
+    blacklist.example-module = true;
+  };
+}
+```
+
+You can use this to manage kernel modules within [modules](#creating-a-module) or [presets](#creating-a-preset).
+If you need to manage multiple kernel modules at once, we encourage you to [create a kernel module combo](#creating-a-kernel-module-combo) instead of managing them individually.
+
+# Creating a kernel module combo
+
+This assumes you have read the [Disabling or blacklisting a kernel module](#disable-or-blacklist-a-kernel-module) section.
+
+Kernel module combos are a way to manage multiple kernel modules at once, by creating a singular option that will affect a list of kernel modules. This is useful for managing kernel modules that are related to each other, or that are commonly used together.
+
+1. Choose the location of the combo:
+   Combos are created within the `kernel-modules/combos` folder, so if you want to create a combo for disabling kernel modules, you would create a combo inside the file `kernel-modules/combos/disable.nix`, and if you want to create a combo for blacklisting kernel modules, you would create a combo inside the file `kernel-modules/combos/blacklist.nix`.
+
+2. Choose a name for the combo:
+   Using existing kernel module names is discouraged, since the way combos are enabled/disabled is the same as standard kernel modules.
+   So you can use a suffix like `-related`. E.g. `bluetooth-related` for a combo that affects all kernel modules related to bluetooth.
+
+3. Create the combo:
+   Inside the file you chose in step 1, create a new attribute with the name of the combo you chose in step 2, and set the value to an attrset with a attribute of `modules`, which is a list of kernel module names that will be affected by the combo. Example:
+
+```nix
+{
+  X-related = {
+    modules = [
+      "x"
+      "x2"
+      "x3"
+    ];
+  };
+}
+```
+
+A simple description is automatically generated for the combo ("Disables/blacklists kernel modules related to X"), and the combo will have a default value of `false`, so it will not be enabled by default.
+But the attrset can have all the attributes that can be passed to `mkOption`, so you can add a `description` attribute to the attrset to override the default description, and a `default` attribute to set the default value of the combo. Example:
+
+```nix
+{
+  X-related = {
+    default = true;
+    description = "Disables/blacklists kernel modules related to X, which are not needed for most users.";
+    modules = [
+      "x"
+      "x2"
+      "x3"
+    ];
+  };
+}
+```
 
 # Adding functions to the lib
 

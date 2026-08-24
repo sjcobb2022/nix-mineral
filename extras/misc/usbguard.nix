@@ -21,15 +21,46 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "misc" "usbguard" "enable" ] ''
+      This option does not align with the current project scope.
+
+      Replace with `services.usbguard.enable`.
+
+      See:
+      https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/security/usbguard.nix
+    '')
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "misc" "usbguard" "whitelist-at-boot" ] ''
+      This option does not align with the current project scope.
+
+      Replace with `services.usbguard.presentDevicePolicy = "allow";`.
+
+      See:
+      https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/security/usbguard.nix
+    '')
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "misc" "usbguard" "gnome-integration" ] ''
+      This option does not align with the current project scope.
+
+      Replace with:
+      `services.usbguard.dbus.enable` and `services.usbguard.IPCAllowedUsers` or `services.usbguard.IPCAllowedGroups`.
+
+      `services.usbguard.dbus.enable` already integrates with GNOME if your user
+      is allowed access to the IPC.
+
+      See:
+      https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/security/usbguard.nix
+    '')
+  ];
+
   options = {
     usbguard = {
-      enable = l.mkBoolOption ''
+      enable = l.mkDeprecatedOption ''
         Enable USBGuard, a tool to restrict USB devices.
 
         disable to avoid hassle with handling USB devices at all.
-      '' false;
+      '';
 
-      whitelist-at-boot = l.mkBoolOption ''
+      whitelist-at-boot = l.mkDeprecatedOption ''
         Automatically allow all connected devices at boot in USBGuard.
 
         If `false`, USB devices will be blocked until USBGuard is configured.
@@ -39,9 +70,9 @@
         by USBGuard by default, so whitelisting them manually or enabling this
         may solve that.
         :::
-      '' false;
+      '';
 
-      gnome-integration = l.mkBoolOption ''
+      gnome-integration = l.mkDeprecatedOption ''
         Enable USBGuard dbus daemon and add polkit rules to integrate USBGuard with
         GNOME Shell.
 
@@ -49,17 +80,17 @@
         allows all newly connected devices while unlocked, and blacklists all
         newly connected devices while locked. This is obviously very convenient,
         and is similar behavior to handling USB as ChromeOS and GrapheneOS.
-      '' false;
+      '';
     };
   };
 
-  config = l.mkIf cfg.enable {
+  config = l.mkIf (cfg.enable == true) {
     services.usbguard = {
       enable = l.mkDefault true;
-      presentDevicePolicy = l.mkIf cfg.whitelist-at-boot (l.mkDefault "allow");
-      dbus.enable = l.mkDefault cfg.gnome-integration;
+      presentDevicePolicy = l.mkIf (cfg.whitelist-at-boot == true) (l.mkDefault "allow");
+      dbus.enable = l.mkDefault (cfg.gnome-integration == true);
     };
-    security.polkit.extraConfig = l.mkIf cfg.gnome-integration ''
+    security.polkit.extraConfig = l.mkIf (cfg.gnome-integration == true) ''
       polkit.addRule(function(action, subject) {
         if ((action.id == "org.usbguard.Policy1.listRules" ||
              action.id == "org.usbguard.Policy1.appendRule" ||

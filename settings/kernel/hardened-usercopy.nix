@@ -15,41 +15,29 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 {
-  options,
-  config,
-  pkgs,
-  lib,
   l,
   cfg,
   ...
 }:
 
-let
-  categoryModules =
-    l.mkCategoryModules cfg
-      [
-        ./coredump.nix
-        ./restrict-printk.nix
-        ./kptr-restrict.nix
-        ./dmesg-restrict.nix
-        ./quiet-boot.nix
-        ./debugfs.nix
-        ./efipstore.nix
-        ./panic-reboot.nix
-      ]
-      {
-        inherit
-          options
-          config
-          pkgs
-          lib
-          ;
-      };
-in
 {
-  imports = l.mkCategoryImports categoryModules;
+  options = {
+    hardened-usercopy = l.mkBoolOption ''
+      Ensure hardened usercopy checking is enabled at boot, to proactively check
+      and protect against exploits involving abuse of the `copy_to_user()` and
+      `copy_from_user()` functions in the kernel to read and write memory beyond
+      intended boundaries.
 
-  options.debug = l.mkCategoryOptions categoryModules;
+      ::: {.note}
+      See:
+      - https://www.kernelconfig.io/config_hardened_usercopy
+      - https://kspp.github.io/Recommended_Settings
+      - https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.html
+      :::
+    '' true;
+  };
 
-  config = l.mkCategoryConfig categoryModules;
+  config = l.mkIf cfg {
+    boot.kernelParams = [ "hardened_usercopy=1" ];
+  };
 }

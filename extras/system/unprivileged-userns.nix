@@ -21,24 +21,26 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "system" "unprivileged-userns" ] ''
+      This option does nothing on the upstream NixOS kernel.
+    '')
+  ];
+
   options = {
-    unprivileged-userns = l.mkBoolOption ''
+    unprivileged-userns = l.mkDeprecatedOption ''
+      This option DOES NOT work on the upstream NixOS kernel. Setting this
+      does nothing because the requisite sysctl does not exist.
+
       Enable or disable unprivileged user namespaces.
 
       It has been the cause of many privilege escalation vulnerabilities,
       but can cause breakage. If `false`, this may break some applications
       that rely on user namespaces.
-
-      ::: {.note}
-      It is left enabled by default now because the benefits of
-      rootless sandboxing in Chromium, unprivileged containers,
-      and bubblewrap among many other applications, combined with
-      the increased maturity of unprivileged namespaces as of Oct 2025.
-      :::
-    '' true;
+    '';
   };
 
-  config = l.mkIf (!cfg) {
+  config = l.mkIf (cfg == false) {
     boot.kernel.sysctl = {
       "kernel.unprivileged_userns_clone" = l.mkDefault "0";
     };

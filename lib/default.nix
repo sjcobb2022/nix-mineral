@@ -45,10 +45,60 @@ let
       type = l.types.bool;
     };
 
+  # constructor to create a deprecated option, forcing the default value to be null.
+  # intended to be used with `mkDeprecatedOptionModule` to add a deprecation warning.
+  # `value` can be any attrset that can be passed to `mkOption`, or a string with the description of the option.
+  mkDeprecatedOption =
+    value:
+    let
+      attrs =
+        if l.typeOf value == "string" then
+          {
+            description = value;
+            example = true;
+            type = l.types.bool;
+          }
+        else
+          value;
+    in
+    l.mkOption (
+      attrs
+      // {
+        description = ''
+          ::: {.warning}
+          THIS OPTION IS NOW DEPRECATED. INFORMATION BELOW IS RETAINED FOR
+          FUTURE REFERENCE, AND THIS OPTION IS SCHEDULED TO BE REMOVED PENDING THE
+          NEXT RELEASE.
+          :::
+
+          ${if attrs ? description then attrs.description else ""}
+        '';
+        default = null;
+        type = l.types.nullOr attrs.type;
+      }
+    );
+
+  # returns a module that adds a deprecation warning if the specified option is set to a non-null value.
+  # this is intended to be used the same way as `mkRemovedOptionModule` in nixpkgs,
+  # but it does not create an option, it only adds a warning if the option is set to a non-null value.
+  mkDeprecatedOptionModule =
+    optionPath: message:
+    { config, ... }:
+    {
+      config.warnings = l.optionals ((l.getAttrFromPath optionPath config) != null) [
+        ''
+          The option `${l.showOption optionPath}` is deprecated, and will be removed in a future release.
+          Please remove this setting from your NixOS configuration.
+
+          ${message}
+        ''
+      ];
+    };
+
   # import wrapper to pass extra args to a module
   # used to pass the `l` variable to every module, and used in the importCategoryModule function to pass parentCfg and cfg.
   importModule =
-    path: extraArgs: # `extraArgs` is a attrset that can contain any additional arguments to pass to the module
+    module: extraArgs: # `extraArgs` is a attrset that can contain any additional arguments to pass to the module
     (
       {
         lib,
@@ -57,7 +107,7 @@ let
         pkgs,
         ...
       }:
-      ((import path) (
+      ((if lib.typeOf module == "path" then import module else module) (
         {
           inherit
             lib
@@ -71,11 +121,14 @@ let
               sources
               fetchGhFile
               mkBoolOption
+              mkDeprecatedOption
+              mkDeprecatedOptionModule
               importModule
               importCategoryModule
               mkCategoryModules
-              mkCategorySubmodule
+              mkCategoryOptions
               mkCategoryConfig
+              mkCategoryImports
               mkFilesystemOptions
               ;
           };
@@ -111,27 +164,14 @@ let
   # `cfg` is the child of parentCfg that has the base name of the path (without the .nix extension if any)
   importCategoryModule =
     categoryConfig: path: args:
-    (
-      (importModule path (
-        let
-          pathBaseName = l.baseNameOf path;
-        in
-        {
-          # pass the category config to the module
-          parentCfg = categoryConfig;
-          # pass the path base name as a config attribute
-          # remove .nix extension if present
-          cfg =
-            categoryConfig."${
-              if (l.hasSuffix ".nix" pathBaseName) then
-                l.substring 0 (l.stringLength pathBaseName - 4) pathBaseName
-              else
-                pathBaseName
-            }";
-        }
-      ))
-      args
-    );
+    (importModule path {
+      # pass the category config to the module
+      parentCfg = categoryConfig;
+      # pass the path base name as a config attribute
+      # remove .nix extension if present
+      cfg = categoryConfig.${l.removeSuffix ".nix" (l.baseNameOf path)};
+    })
+      args;
 
   # import many modules with `importCategoryModule` and creates a list with the results
   # `categoryConfig` is the config for the category the module belongs to, ex: config.nix-mineral.settings.kernel
@@ -141,19 +181,34 @@ let
     categoryConfig: paths: args:
     l.map (path: (importCategoryModule categoryConfig path args)) paths;
 
-  # create a submodule type for a list of categoryModules created with `mkCategoryModules`
-  mkCategorySubmodule =
+  # create an attrset with all options from a list of categoryModules created with `mkCategoryModules`
+  mkCategoryOptions =
     modules:
-    (l.types.submoduleWith {
-      shorthandOnlyDefinesConfig = true;
-      modules = l.map (module: {
-        inherit (module) options;
-      }) modules;
-    });
+    l.mergeAttrsList (l.map (module: if module ? options then module.options else { }) modules);
 
   # create a config for a list of categoryModules created with `mkCategoryModules`
   # use this to define a `config = ...` attrset
-  mkCategoryConfig = modules: (l.mkMerge (l.map (module: module.config) modules));
+  mkCategoryConfig =
+    modules: (l.mkMerge (l.map (module: if module ? config then module.config else { }) modules));
+
+  # create a list of imports for a list of categoryModules created with `mkCategoryModules
+  # this uses `importModule` to import the modules, so it will pass the `l` variable to every module
+  # use this to define an `imports = ...` attrset
+  mkCategoryImports =
+    modules:
+    l.concatMap (
+      module:
+      if module ? imports then
+        (l.map (
+          moduleImport:
+          if l.typeOf moduleImport == "path" || l.typeOf moduleImport == "lambda" then
+            importModule moduleImport { }
+          else
+            moduleImport
+        ) module.imports)
+      else
+        [ ]
+    ) modules;
 in
 {
   flake.lib = {
@@ -161,11 +216,14 @@ in
       sources
       fetchGhFile
       mkBoolOption
+      mkDeprecatedOption
+      mkDeprecatedOptionModule
       importModule
       importCategoryModule
       mkCategoryModules
-      mkCategorySubmodule
+      mkCategoryOptions
       mkCategoryConfig
+      mkCategoryImports
       ;
   };
 }

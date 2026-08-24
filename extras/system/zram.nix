@@ -21,8 +21,16 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "system" "zram" ] ''
+      This option does not align with the current project scope
+
+      Replace with `zramSwap.enable`.
+    '')
+  ];
+
   options = {
-    zram = l.mkBoolOption ''
+    zram = l.mkDeprecatedOption ''
       Enable zram so that memory is more likely to be compressed instead of
       written to disk, which may include sensitive information.
 
@@ -34,10 +42,10 @@
       task of limiting swapping of sensitive data depends highly on the user's
       individual swapping setup which can't be reliably inferred.
       :::
-    '' false;
+    '';
   };
 
-  config = l.mkIf cfg {
+  config = l.mkIf (cfg == true) {
     zramSwap.enable = true;
   };
 }

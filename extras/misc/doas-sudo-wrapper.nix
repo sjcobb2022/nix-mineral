@@ -23,14 +23,24 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "misc" "doas-sudo-wrapper" ] ''
+      This option does not align with the current project scope and the doas port is unmaintained.
+      Please use a different tool to get admin privileges.
+    '')
+  ];
+
   options = {
-    doas-sudo-wrapper = l.mkBoolOption ''
+    doas-sudo-wrapper = l.mkDeprecatedOption ''
+      This option does not fit the project's current vision. The doas port
+      in NixOS is unmaintained and not recommended for production use.
+
       Creates a wrapper for doas to simulate sudo, with nano to utilize rnano as
       editor for editing as root.
-    '' false;
+    '';
   };
 
-  config = l.mkIf cfg {
+  config = l.mkIf (cfg == true) {
     environment.systemPackages = with pkgs; [
       (writeShellScriptBin "sudo" ''
         exec ${config.security.wrapperDir}/doas "$@"

@@ -37,8 +37,11 @@
       };
     };
 
-    extras = {
-      kernel = {
+    kernel-modules = {
+      # Do not allow loading kernel modules after sysctl are initialized.
+      load = false;
+
+      disable = {
         # Avoid putting trust in the highly privilege ME system,
         # Intel users should read more about the issue at the below links:
         # https://www.kernel.org/doc/html/latest/driver-api/mei/mei.html
@@ -46,8 +49,16 @@
         # https://www.kicksecure.com/wiki/Out-of-band_Management_Technology#Intel_ME_Disabling_Disadvantages
         # https://github.com/Kicksecure/security-misc/pull/236#issuecomment-2229092813
         # https://github.com/Kicksecure/security-misc/issues/239
-        intelme-kmodules = false;
+        intelme-related = true;
+
+        # Disable bluetooth related kernel modules. (breaks bluetooth)
+        bluetooth-related = true;
       };
+    };
+
+    extras = {
+      # Panic the kernel upon kernel warnings or above.
+      kernel.warn-panic = true;
 
       system = {
         # Lock the root account. Requires another method of privilege escalation, i.e
@@ -62,28 +73,12 @@
         # Replace systemd-timesyncd with chrony for NTP, and configure chrony for NTS
         # and to use the seccomp filter for security.
         secure-chrony = true;
-
-        # if false, this may break some applications that rely on user namespaces.
-        unprivileged-userns = false;
       };
 
       network = {
-        # Disable bluetooth related kernel modules. (breaks bluetooth)
-        bluetooth-kmodules = false;
-
         # if false, may help mitigate TCP reset DoS attacks, but
         # may also harm network performance when at high latencies.
         tcp-window-scaling = false;
-      };
-
-      misc = {
-        # Replace sudo with doas, doas has a lower attack surface, but is less audited.
-        replace-sudo-with-doas = true;
-        doas-sudo-wrapper = true;
-
-        # Enable USBGuard, a tool to restrict USB devices.
-        # (blocks any USB devices, maybe enable usbguard.whitelist-at-boot)
-        usbguard.enable = true;
       };
     };
   };

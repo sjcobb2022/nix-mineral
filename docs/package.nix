@@ -49,24 +49,34 @@ let
           position = 1;
         }
         {
-          path = "SCOPE.md";
-          new_title = "Scope";
+          path = "FAQ.md";
+          new_title = "Frequently asked questions";
           position = 2;
         }
         {
-          path = "CONTRIBUTING.md";
-          new_title = "Contributing";
+          path = "CAVEATS.md";
+          new_title = "Caveats";
           position = 3;
         }
         {
-          path = "OMITTED.md";
-          new_title = "Omitted Features";
+          path = "SCOPE.md";
+          new_title = "Scope";
           position = 4;
         }
         {
           path = "ADDITIONAL-RESOURCES.md";
           new_title = "Additional Resources";
           position = 5;
+        }
+        {
+          path = "OMITTED.md";
+          new_title = "Omitted Features";
+          position = 6;
+        }
+        {
+          path = "CONTRIBUTING.md";
+          new_title = "Contributing";
+          position = 7;
         }
       ];
 
@@ -96,17 +106,26 @@ let
             position = 5;
           }
           {
+            name = "nix-mineral.kernel-modules";
+            position = 6;
+          }
+          {
             name.regex = "^nix-mineral\\.filesystems\\..*";
             position = 10;
             depth = 2;
           }
           {
-            name.regex = "^nix-mineral\\.settings\\..*";
+            name.regex = "^nix-mineral\\.kernel-modules\\..*";
             position = 20;
+            depth = 2;
+          }
+          {
+            name.regex = "^nix-mineral\\.settings\\..*";
+            position = 30;
           }
           {
             name.regex = "^nix-mineral\\.extras\\..*";
-            position = 30;
+            position = 40;
           }
         ];
       };
@@ -117,7 +136,7 @@ let
   # https://github.com/feel-co/hjem/blob/8539013044624a257e8da370069107aea148e985/docs/package.nix#L24
   # https://github.com/snugnug/hjem-rum/blob/edac54b7d57ad72cc4b124da2f44e7b2e584f3c6/docs/package.nix#L17
   evalModules = (
-    lib.nixosSystem {
+    lib.evalModules {
       modules = [
         inputs.self.nixosModules.nix-mineral
 
@@ -189,30 +208,30 @@ let
             if lib.hasPrefix (toString ../.) (toString decl) then
               let
                 splitedLocation = lib.splitString "." (
-                  lib.head (
-                    lib.splitString ".<" (
-                      if lib.hasSuffix ".enable" opt.name then lib.removeSuffix ".enable" opt.name else opt.name
-                    )
-                  )
+                  lib.head (lib.splitString ".<" (lib.removeSuffix ".enable" opt.name))
                 );
 
                 # nix-mineral repository structure is quite different from a standard module,
                 # so this function transforms the options into valid paths in the nix-mineral repository.
                 fileLocation =
-                  if (lib.length splitedLocation == 1) then
+                  if lib.length splitedLocation == 1 then
                     lib.elemAt splitedLocation 0
-                  else if (lib.length splitedLocation == 2) then
-                    if (lib.elemAt splitedLocation 1 == "preset") then
-                      "presets/default"
-                    else
-                      lib.elemAt splitedLocation 0
+                  else if lib.length splitedLocation == 2 then
+                    if lib.elemAt splitedLocation 1 == "preset" then "presets/default" else lib.elemAt splitedLocation 0
                   else
                     let
                       parts = "${lib.elemAt splitedLocation 1}/${lib.elemAt splitedLocation 2}";
                     in
                     (
-                      if (lib.length splitedLocation == 3) then
-                        if (lib.elemAt splitedLocation 1 == "filesystems") then parts else "${parts}/default"
+                      if lib.length splitedLocation == 3 then
+                        if
+                          lib.elemAt splitedLocation 1 == "filesystems" || lib.elemAt splitedLocation 1 == "kernel-modules"
+                        then
+                          parts
+                        else
+                          "${parts}/default"
+                      else if lib.elemAt splitedLocation 1 == "kernel-modules" then
+                        "${lib.elemAt splitedLocation 1}/combos/${lib.elemAt splitedLocation 2}"
                       else
                         "${parts}/${lib.elemAt splitedLocation 3}"
                     );
@@ -265,7 +284,7 @@ rec {
               );
           in
           (mapMdFiles (fileName: ''
-            substituteInPlace ./inputs/index.md --replace \
+            substituteInPlace ./inputs/index.md --replace-warn \
               '](docs/${fileName})' \
               '](${fileName})'
           ''))

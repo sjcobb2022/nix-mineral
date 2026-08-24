@@ -21,15 +21,25 @@
 }:
 
 {
+  imports = [
+    (l.mkDeprecatedOptionModule [ "nix-mineral" "extras" "misc" "replace-sudo-with-doas" ] ''
+      This option does not align with the current project scope and the doas port is unmaintained.
+      Please use a different tool to get admin privileges.
+    '')
+  ];
+
   options = {
-    replace-sudo-with-doas = l.mkBoolOption ''
+    replace-sudo-with-doas = l.mkDeprecatedOption ''
+      This option does not fit the project's current vision. The doas port
+      in NixOS is unmaintained and not recommended for production use.
+
       Replace `sudo` with `doas`.
 
       `doas` has a lower attack surface, but is less audited.
-    '' false;
+    '';
   };
 
-  config = l.mkIf cfg {
+  config = l.mkIf (cfg == true) {
     security.sudo.enable = l.mkDefault false;
     security.doas = {
       enable = l.mkDefault true;

@@ -29,7 +29,6 @@ let
     l.mkCategoryModules cfg
       [
         ./tcp-window-scaling.nix
-        ./bluetooth-kmodules.nix
       ]
       {
         inherit
@@ -41,15 +40,9 @@ let
       };
 in
 {
-  options = {
-    network = l.mkOption {
-      description = ''
-        Extra settings for the network.
-      '';
-      default = { };
-      type = l.mkCategorySubmodule categoryModules;
-    };
-  };
+  imports = l.mkCategoryImports categoryModules;
+
+  options.network = l.mkCategoryOptions categoryModules;
 
   config = l.mkCategoryConfig categoryModules;
 }
