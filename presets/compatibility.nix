@@ -69,6 +69,11 @@
       };
     };
 
+    # Do not disable or blacklist any kernel modules
+    # Various kernel modules are disabled by default, which makes a wide variety
+    # of features and drivers unavailable
+    kernel-modules.enable = false;
+
     filesystems = {
       normal = {
         # noexec on /home can be very inconvenient for desktops.
