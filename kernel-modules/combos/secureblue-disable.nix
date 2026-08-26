@@ -42,9 +42,15 @@ in
 
   firewire-related = {
     description = ''
-      Disable kernel modules related to firewire.
+      Disable kernel modules related to firewire, as it uses DMA which could be
+      used in a DMA attack.
 
       ::: {.note}
+      See:
+        - https://en.wikipedia.org/wiki/DMA_attack
+        - https://eclypsium.com/research/direct-memory-access-attacks-a-walk-down-memory-lane/
+        - https://emb3d.mitre.org/threats/TID-107.html
+
       This option disables kernel modules from the
       [secureblue kernel modules list](https://github.com/${ssb.user}/${ssb.repo}/blob/${ssb.rev}/${ssb.file}#L36-L54).
       This excludes the modules: `thunderbolt` and `thunderbolt_net`.
@@ -54,7 +60,29 @@ in
     default = true;
   };
 
-  thunderbolt-related = mkSBKModulesOption 44 45 "thunderbolt" { };
+  thunderbolt-related = {
+    description = ''
+      Disable kernel modules related to thunderbolt, as it uses DMA which
+      could be abused in a DMA attack.
+
+      ::: {.note}
+      See:
+        - https://en.wikipedia.org/wiki/DMA_attack
+        - https://eclypsium.com/research/direct-memory-access-attacks-a-walk-down-memory-lane/
+        - https://emb3d.mitre.org/threats/TID-107.html
+      :::
+
+      ::: {.note}
+      Thunderbolt may be necessary for proper suspend function on modern laptops.
+      If thunderbolt is not enabled, suspend may consume abnormal amounts of power.
+
+      See:
+      https://github.com/secureblue/secureblue/issues/2437
+      :::
+    '';
+    modules = (mkSBKModulesList 44 45);
+    default = true;
+  };
 
   unused-filesystems = mkSBKModulesOption 56 116 "commonly unused filesystems" { };
 
