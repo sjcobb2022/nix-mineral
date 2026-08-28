@@ -26,7 +26,7 @@ https://madaidans-insecurities.github.io/security-privacy-advice.html \
 Basic OPSEC. Decent, concise advice. Many will disagree with, or just disregard a lot here, but the "General" advice here is applicable and useful to most people.
 
 https://codeberg.org/celenity/Phoenix \
-https://codeberg.org/celenity/Phoenix/wiki/Limitations - LIMITATIONS OF FIREFOX \
+https://codeberg.org/celenity/Phoenix/wiki/transparency-limitations - LIMITATIONS OF FIREFOX \
 https://grapheneos.org/usage#web-browsing - LIMITATIONS OF FIREFOX (2) \
 Phoenix is arkenfox alternative featuring a NixOS module, designed to reduce unsolicited connections among other features. This may make you stand out due to a smaller userbase, though. Due to structural considerations, this should not be considered remotely comparable in terms of security in exploit resistance and isolation to Chromium, and should be considered only for "harm mitigation" at best with knowledge of its shortcomings.
 
