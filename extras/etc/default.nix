@@ -38,15 +38,7 @@ let
       };
 in
 {
-  options = {
-    etc = l.mkOption {
-      description = ''
-        Extra settings for files in `/etc`.
-      '';
-      default = { };
-      type = l.mkCategorySubmodule categoryModules;
-    };
-  };
-
+  imports = l.mkCategoryImports categoryModules;
+  options.etc = l.mkCategoryOptions categoryModules;
   config = l.mkCategoryConfig categoryModules;
 }
