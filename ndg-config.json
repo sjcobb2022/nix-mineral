@@ -19,24 +19,34 @@
         "position": 1
       },
       {
-        "new_title": "Scope",
-        "path": "SCOPE.md",
+        "new_title": "Frequently asked questions",
+        "path": "FAQ.md",
         "position": 2
       },
       {
-        "new_title": "Contributing",
-        "path": "CONTRIBUTING.md",
+        "new_title": "Caveats",
+        "path": "CAVEATS.md",
         "position": 3
       },
       {
-        "new_title": "Omitted Features",
-        "path": "OMITTED.md",
+        "new_title": "Scope",
+        "path": "SCOPE.md",
         "position": 4
       },
       {
         "new_title": "Additional Resources",
         "path": "ADDITIONAL-RESOURCES.md",
         "position": 5
+      },
+      {
+        "new_title": "Omitted Features",
+        "path": "OMITTED.md",
+        "position": 6
+      },
+      {
+        "new_title": "Contributing",
+        "path": "CONTRIBUTING.md",
+        "position": 7
       }
     ],
     "number_special_files": false,
@@ -65,6 +75,10 @@
           "position": 5
         },
         {
+          "name": "nix-mineral.kernel-modules",
+          "position": 6
+        },
+        {
           "depth": 2,
           "name": {
             "regex": "^nix-mineral\\.filesystems\\..*"
@@ -72,16 +86,23 @@
           "position": 10
         },
         {
+          "depth": 2,
           "name": {
-            "regex": "^nix-mineral\\.settings\\..*"
+            "regex": "^nix-mineral\\.kernel-modules\\..*"
           },
           "position": 20
         },
         {
           "name": {
-            "regex": "^nix-mineral\\.extras\\..*"
+            "regex": "^nix-mineral\\.settings\\..*"
           },
           "position": 30
+        },
+        {
+          "name": {
+            "regex": "^nix-mineral\\.extras\\..*"
+          },
+          "position": 40
         }
       ],
       "ordering": "custom"

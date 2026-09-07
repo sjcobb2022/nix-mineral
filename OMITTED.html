@@ -75,10 +75,12 @@
             <div class="sidebar-section-content">
               <ul>
                 <li><a href="index.html">Nix Mineral</a></li>
-<li><a href="SCOPE.html">1. Scope</a></li>
-<li><a href="CONTRIBUTING.html">2. Contributing</a></li>
-<li><a href="OMITTED.html">3. Omitted Features</a></li>
+<li><a href="FAQ.html">1. Frequently asked questions</a></li>
+<li><a href="CAVEATS.html">2. Caveats</a></li>
+<li><a href="SCOPE.html">3. Scope</a></li>
 <li><a href="ADDITIONAL-RESOURCES.html">4. Additional Resources</a></li>
+<li><a href="OMITTED.html">5. Omitted Features</a></li>
+<li><a href="CONTRIBUTING.html">6. Contributing</a></li>
 <li><a href="search.html">Search</a></li>
 
               </ul>
@@ -94,6 +96,7 @@
 <ul><li><a href="#sysctl-omitted-from-k4yt3x-config-that-are-out-of-scope-of-nix-mineral-and-hardening-but-may-be-useful-anyways-to-some--see-their-repo-for-details">sysctl omitted from K4YT3X config that are out of scope of nix-mineral and hardening but may be useful anyways to some, see their repo for details:</a>
 <li><a href="#sections-from-madaidan-s-guide-that-are-irrelevant-non-applicable">Sections from madaidan's guide that are IRRELEVANT/NON-APPLICABLE:</a>
 <li><a href="#sections-from-madaidan-s-guide-requiring-manual-user-intervention">Sections from madaidan's guide requiring manual user intervention:</a>
+<li><a href="#other-options-omitted-due-to-requiring-upstream-support">Other options omitted due to requiring upstream support</a>
 <li><a href="#options-omitted-due-to-already-being-used-by-default-on-nixos">Options omitted due to already being used by default on NixOS:</a>
 </li></ul></li>
               </ul>
@@ -158,6 +161,8 @@ net.ipv4.tcp_notsent_lowat = 131072</p>
 2.6 (Advice) <br>
 2.10 (Package is broken) <br>
 7 (Advice) <br>
+10.3 (This causes breakage with little benefit due to adjacent information leaks
+<a href="https://github.com/secureblue/secureblue/issues/1121">https://github.com/secureblue/secureblue/issues/1121</a>)
 10.5.4 (The problem of NTP being unencrypted is fixed by using NTS instead.
 Note that this means using chrony, as in "Software Choice" in the overrides,
 which is not default behavior!) <br>
@@ -167,7 +172,9 @@ which is not default behavior!) <br>
 21.7 (Advice, not in threat model) <br>
 22 (Advice)</p>
 <h2 id="sections-from-madaidan-s-guide-requiring-manual-user-intervention">Sections from madaidan's guide requiring manual user intervention:</h2>
-<p>2.7 (systemd service hardening must be done manually) <br>
+<p>2.4 (Excluded due to significant breakage and trivial bypasses during typical usage. See:
+<a href="https://github.com/secureblue/secureblue/issues/101">https://github.com/secureblue/secureblue/issues/101</a>, <a href="https://github.com/systemd/systemd/issues/29893">https://github.com/systemd/systemd/issues/29893</a>)
+2.7 (systemd service hardening must be done manually) <br>
 2.9 (Paid software) <br>
 2.11 (Unique for all hardware, inconvenient) <br>
 4 (Sandboxing must be done manually) <br>
@@ -191,6 +198,9 @@ implemented here) <br>
 21.3.2 (See above) <br>
 21.3.3 (See above) <br>
 21.4 (Non-declarative setup, experimental)</p>
+<h2 id="other-options-omitted-due-to-requiring-upstream-support">Other options omitted due to requiring upstream support</h2>
+<p><code>lockdown=confidentiality</code> and <code>module.sig_enforce=1</code> - NixOS does not sign kernel modules nor compile with the lockdown LSM.</p>
+<p><code>cfi=kcfi</code> - Disputed utility, and useless except with a custom kernel compiled with clang CFI.</p>
 <h2 id="options-omitted-due-to-already-being-used-by-default-on-nixos">Options omitted due to already being used by default on NixOS:</h2>
 <p><code>boot.kernel.sysctl."vm.max_map_count" = "1048576"</code> - Used for reducing crashes in memory intensive applications. Also required to allow hardened_malloc to allocate enough guard pages to work as intended.</p>
 <p><code>networking.firewall.enable = true;</code> - Enabled by default on NixOS. Already widely integrated in various upstream NixOS modules.</p>
@@ -207,6 +217,7 @@ implemented here) <br>
 <ul><li><a href="#sysctl-omitted-from-k4yt3x-config-that-are-out-of-scope-of-nix-mineral-and-hardening-but-may-be-useful-anyways-to-some--see-their-repo-for-details">sysctl omitted from K4YT3X config that are out of scope of nix-mineral and hardening but may be useful anyways to some, see their repo for details:</a>
 <li><a href="#sections-from-madaidan-s-guide-that-are-irrelevant-non-applicable">Sections from madaidan's guide that are IRRELEVANT/NON-APPLICABLE:</a>
 <li><a href="#sections-from-madaidan-s-guide-requiring-manual-user-intervention">Sections from madaidan's guide requiring manual user intervention:</a>
+<li><a href="#other-options-omitted-due-to-requiring-upstream-support">Other options omitted due to requiring upstream support</a>
 <li><a href="#options-omitted-due-to-already-being-used-by-default-on-nixos">Options omitted due to already being used by default on NixOS:</a>
 </li></ul></li>
           </ul>

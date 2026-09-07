@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scope</title>
+    <title>nix-mineral</title>
     <meta name="author" content="cynicsketch" />
     <meta name="description" content="nix-mineral automatic option documentation" />
     <meta name="keywords" content="documentation,nix,tutorial,nix-mineral" /> 
@@ -91,27 +91,36 @@
             <summary>Contents</summary>
             <div class="sidebar-section-content">
               <ul class="toc-list">
-                <li><a href="#scope">Scope</a>
-</li>
+                <ul><li><a href="#why-won-t-my-system-boot">Why won't my system boot?</a>
+<li><a href="#something-isn-t-working">Something isn't working!</a>
+<li><a href="#why-does-my-computer-keep-randomly-rebooting">Why does my computer keep randomly rebooting?</a>
+</li></ul></li>
               </ul>
             </div>
           </details>
         </nav>
 
-        <main class="content"><html><head></head><body><h1 id="scope">Scope</h1>
-<p>By default, <code>nix-mineral</code> provides a configuration baseline for existing software
-to reduce attack surface.</p>
-<p>It is intended to be used for defense-in-depth purposes only. It is not, and will not
-ever be intended as a substitute to the implementation of core security practices such
-as strong OPSEC (operations security), sandboxing, privilege separation, or any other
-primary guiding principle or framework.</p>
-<p>For development simplicity, target systems are assumed to be running <code>nixos-unstable</code>.
-Incompatibility may occur with renamed options, which should be manually overridden if necessary.</p>
-<p><code>nix-mineral</code> aims to serve as a drop-in addition to any NixOS system.</p>
-<p>Because of this, complete overhauls of system UX or architecture is infeasible compared
-to dedicated security focused operating systems with complete executive control over design.</p>
-<p><code>nix-mineral</code>'s threat model assumes non-state adversaries, and anonymity is
-not considered.</p>
+        <main class="content"><html><head></head><body><h2 id="why-won-t-my-system-boot">Why won't my system boot?</h2>
+<p>Try setting <code>nix-mineral.settings.kernel.busmaster-bit = false;</code> since it may
+cause boot failure on some hardware.</p>
+<p>If you are getting errors about failed mounts, review
+<a href="https://cynicsketch.github.io/nix-mineral/options.html#option-nix-mineral.filesystems.normal">nix-mineral.filesystems.normal</a>
+and make sure any directory that is dedicated a specific partition or subvolume
+is not bind mounted.</p>
+<p>You can see all the mountpoints that are hardened by default here:
+<a href="https://github.com/cynicsketch/nix-mineral/blob/main/filesystems/normal.nix">https://github.com/cynicsketch/nix-mineral/blob/main/filesystems/normal.nix</a></p>
+<h2 id="something-isn-t-working">Something isn't working!</h2>
+<p>Check <a href="https://github.com/cynicsketch/nix-mineral/blob/main/presets/compatibility.nix">https://github.com/cynicsketch/nix-mineral/blob/main/presets/compatibility.nix</a>
+for any settings that may be relevant to your problem.</p>
+<h2 id="why-does-my-computer-keep-randomly-rebooting">Why does my computer keep randomly rebooting?</h2>
+<p>You are probably experiencing kernel panics. <code>nix-mineral.settings.debug.panic-reboot = true;</code>
+automatically reboots the system on panic to prevent information leaks and attempt
+to recover the system as fast as possible.</p>
+<p>Try setting <code>nix-mineral.settings.kernel.oops-panic = false;</code> to see if that makes it
+stop, <code>nix-mineral.settings.debug.panic-reboot = false;</code> if you'd like to prevent
+the reboot, and disable other options in <code>nix-mineral.settings.debug</code> for debugging purposes.</p>
+<p>If fully disabling <code>nix-mineral</code> doesn't fix it, it is likely to be an upstream
+problem.</p>
 </body></html></main>
       </div>
 
@@ -119,8 +128,10 @@ not considered.</p>
         <nav class="page-toc-nav">
           <h3>On this page</h3>
           <ul class="page-toc-list">
-            <li><a href="#scope">Scope</a>
-</li>
+            <ul><li><a href="#why-won-t-my-system-boot">Why won't my system boot?</a>
+<li><a href="#something-isn-t-working">Something isn't working!</a>
+<li><a href="#why-does-my-computer-keep-randomly-rebooting">Why does my computer keep randomly rebooting?</a>
+</li></ul></li>
           </ul>
         </nav>
       </aside>
